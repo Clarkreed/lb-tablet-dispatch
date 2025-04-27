@@ -1,0 +1,47 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- Carjacking Dispatch Alert
+RegisterNetEvent('dispatch:carjacking')
+AddEventHandler('dispatch:carjacking', function()
+    local coords = GetEntityCoords(PlayerPedId())
+    local streetName = GetStreetNameFromHashKey(GetStreetNameAtCoord(coords.x, coords.y, coords.z))
+    local vehicle = GetVehiclePedIsTryingToEnter(PlayerPedId())
+    local vehicleModel = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
+    local vehiclePlate = GetVehicleNumberPlateText(vehicle)
+    local vehicleColor = GetVehicleColor(vehicle)
+    
+    local dispatchData = {
+        dispatchCode = "10-31V", -- Vehicle crime
+        description = "Carjacking in Progress",
+        priority = 1, -- High priority
+        origin = {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z
+        },
+        dispatchMessage = "Vehicle theft in progress",
+        job = {"hpd", "mcso", "txfw", "txdps", "txdc", "fbi", "dea"},
+        streetName = streetName,
+        sprite = 225, -- Car theft blip
+        color = 1, -- Red
+        scale = 1.0,
+        length = 5,
+        information = string.format("Vehicle: %s\nPlate: %s\nColor: %s", vehicleModel, vehiclePlate, vehicleColor)
+    }
+
+    TriggerServerEvent("dispatch:server:notify", dispatchData)
+end)
+
+-- Detect carjacking
+CreateThread(function()
+    while true do
+        Wait(100)
+        local ped = PlayerPedId()
+        if IsPedTryingToEnterALockedVehicle(ped) or IsPedJacking(ped) then
+            if math.random() < 0.8 then -- 80% chance
+                TriggerEvent('dispatch:carjacking')
+                Wait(10000) -- 10 second cooldown
+            end
+        end
+    end
+end)
